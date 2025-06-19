@@ -9,8 +9,9 @@ from metricas.bert import calcular_metricas_bert_huggingface
 from operadores_geneticos.mutacion import mutacion
 from operadores_geneticos.crossover import crossover
 
+LLM_API_URL = "http://localhost:11434"
 
-LLM_API_URL = "http://localhost:11434/api/chat"
+#LLM_API_URL = "http://localhost:11434/api/chat"
 
 # Esta función se encargará de generar los tweets. En base a los prompts creados y a los textos de referencia.
 # Tambien es mejorable su estructura, para que sea más eficiente y entienda mejor el proceso.
@@ -143,7 +144,7 @@ def torneo(poblacion, k):
     return max(participantes, key=lambda x: x["fitness"])
 
 # Generar nueva población
-def generar_nueva_poblacion(poblacion_actual, texto_referencia, k, num_elitismo, consultar_llm, calcular_metricas_bert_huggingface):
+def generar_nueva_poblacion(poblacion_actual, texto_referencia, k, num_elitismo, consultar_llm, calcular_metricas_bert_huggingface, p_cross=0.9, p_mut=0.01):
     
     nueva_poblacion = [] 
     poblacion_actual.sort(key=lambda x: x["fitness"], reverse=True)
@@ -152,22 +153,9 @@ def generar_nueva_poblacion(poblacion_actual, texto_referencia, k, num_elitismo,
     nueva_poblacion.extend(elite)
     candidatos_torneo = poblacion_actual
     
-    
+    ## Aplicamos Crossover si p menor que pro_cross
     while len(nueva_poblacion) < len(poblacion_actual): ###iteramos hasta que tengamos la cantidad de individuos que necesitamos.
-        if random.random() < 0.15: ## este random es por para ver la mutación, del proceso reproductivo 15% será por mutación
-            individuo = torneo(candidatos_torneo, k)
-            mutado = mutacion(individuo)
-            respuesta = consultar_llm(mutado["prompt"], texto_referencia) 
-            ### el individuo generado por mutación se evalua de inmediato para tener su fitness
-            if respuesta:
-                fitness = calcular_metricas_bert_huggingface({
-                    "data_generada": respuesta,
-                    "texto_referencia": texto_referencia
-                })["f1"]
-                mutado["data_generada"] = respuesta
-                mutado["fitness"] = fitness
-                nueva_poblacion.append(mutado)
-        else: ##prob restante es para crossover. En el estado del arte se aplica mucho mas crossover que mutación. Eventualmente se podrian probar nuevos valores
+        if random.random() < p_cross: ## este random es por para ver si aplicamos crossover 
             padre1 = torneo(candidatos_torneo, k)
             padre2 = torneo(candidatos_torneo, k)
             hijo = crossover(padre1, padre2)
@@ -180,8 +168,53 @@ def generar_nueva_poblacion(poblacion_actual, texto_referencia, k, num_elitismo,
                 })["f1"]
                 hijo["data_generada"] = respuesta
                 hijo["fitness"] = fitness
-                nueva_poblacion.append(hijo)
+
+        if random.random() < p_mut: ## este random es por para ver si aplicamos mutation
+            hijo = mutacion(hijo)
+            respuesta = consultar_llm(hijo["prompt"], texto_referencia) 
+            ### el individuo generado por mutación se evalua de inmediato para tener su fitness
+            if respuesta:
+                fitness = calcular_metricas_bert_huggingface({
+                    "data_generada": respuesta,
+                    "texto_referencia": texto_referencia
+                })["f1"]
+                hijo["data_generada"] = respuesta
+                hijo["fitness"] = fitness
+        nueva_poblacion.append(hijo)
     return nueva_poblacion
+
+
+########################################
+#   while len(nueva_poblacion) < len(poblacion_actual): ###iteramos hasta que tengamos la cantidad de individuos que necesitamos.
+#        if random.random() < 0.15: ## este random es por para ver la mutación, del proceso reproductivo 15% será por mutación
+#            individuo = torneo(candidatos_torneo, k)
+#            mutado = mutacion(individuo)
+#            respuesta = consultar_llm(mutado["prompt"], texto_referencia) 
+#            ### el individuo generado por mutación se evalua de inmediato para tener su fitness
+#            if respuesta:
+#                fitness = calcular_metricas_bert_huggingface({
+#                    "data_generada": respuesta,
+#                    "texto_referencia": texto_referencia
+#                })["f1"]
+#                mutado["data_generada"] = respuesta
+#                mutado["fitness"] = fitness
+#                nueva_poblacion.append(mutado)
+#        else: ##prob restante es para crossover. En el estado del arte se aplica mucho mas crossover que mutación. Eventualmente se podrian probar nuevos valores
+#            padre1 = torneo(candidatos_torneo, k)
+#            padre2 = torneo(candidatos_torneo, k)
+#            hijo = crossover(padre1, padre2)
+#            respuesta = consultar_llm(hijo["prompt"], texto_referencia)
+#             ### el individuo generado por crossover se evalua de inmediato para tener su fitness
+#            if respuesta:
+#                fitness = calcular_metricas_bert_huggingface({
+#                    "data_generada": respuesta,
+#                    "texto_referencia": texto_referencia
+#                })["f1"]
+#                hijo["data_generada"] = respuesta
+#                hijo["fitness"] = fitness
+#                nueva_poblacion.append(hijo)
+#   return nueva_poblacion
+##################################################
 
 # Flujo principal
 def main():
