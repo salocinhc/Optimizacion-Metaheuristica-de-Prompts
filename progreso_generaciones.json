@@ -198,5 +198,45 @@
     {
         "generacion": 10,
         "individuos": []
+    },
+    {
+        "generacion": 1,
+        "individuos": []
+    },
+    {
+        "generacion": 2,
+        "individuos": []
+    },
+    {
+        "generacion": 3,
+        "individuos": []
+    },
+    {
+        "generacion": 4,
+        "individuos": []
+    },
+    {
+        "generacion": 5,
+        "individuos": []
+    },
+    {
+        "generacion": 6,
+        "individuos": []
+    },
+    {
+        "generacion": 7,
+        "individuos": []
+    },
+    {
+        "generacion": 8,
+        "individuos": []
+    },
+    {
+        "generacion": 9,
+        "individuos": []
+    },
+    {
+        "generacion": 10,
+        "individuos": []
     }
 ]
